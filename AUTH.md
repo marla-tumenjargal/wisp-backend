@@ -76,3 +76,7 @@ Interest tables exist on your project, but `public.profiles` does not. In the [S
 
 Until that runs, the app still saves selected interests to `user_interest_preferences` + `user_interest_events` and marks completion on the auth user metadata.
 
+## Obsidian vault (dashboard)
+
+Manual `.zip` upload — no OAuth. Run `supabase/migrations/005_vault.sql`, then use **Second Brain** on `/dashboard` to upload a vault export. Notes → `vault_nodes`; wikilinks + shared tags → `vault_edges`.
+
