@@ -62,7 +62,7 @@ export default async function DashboardPage() {
       </header>
 
       <main className="relative z-10 mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center px-6 pb-20">
-        <p className="text-sm font-medium uppercase tracking-[0.14em] text-accent">
+        <p className="text-sm font-medium uppercase tracking-[0.14em] text-klein">
           Signed in
         </p>
         <h1 className="mt-3 font-[family-name:var(--font-display)] text-4xl font-semibold tracking-[-0.03em] text-ink sm:text-5xl">

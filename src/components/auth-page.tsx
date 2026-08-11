@@ -60,7 +60,7 @@ export function AuthPage({ mode, nextPath, error }: AuthPageProps) {
               Already have an account?{" "}
               <Link
                 href="/login"
-                className="font-medium text-accent underline-offset-4 hover:underline"
+                className="font-medium text-klein underline-offset-4 hover:underline"
               >
                 Log in
               </Link>
@@ -70,7 +70,7 @@ export function AuthPage({ mode, nextPath, error }: AuthPageProps) {
               New to Wisp?{" "}
               <Link
                 href="/signup"
-                className="font-medium text-accent underline-offset-4 hover:underline"
+                className="font-medium text-klein underline-offset-4 hover:underline"
               >
                 Sign up
               </Link>

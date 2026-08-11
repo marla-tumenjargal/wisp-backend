@@ -15,9 +15,8 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Wisp",
-  description:
-    "Wisp, a creative platform that connects your ideas across multiple mediums.",
+  title: "wisp.",
+  description: "an interface that expands how you create.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
