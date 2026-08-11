@@ -9,16 +9,23 @@ export default async function DashboardPage() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login");
+    redirect("/onboarding");
   }
 
   const profileResult = await supabase
     .from("profiles")
-    .select("display_name, avatar_url, providers")
+    .select("display_name, avatar_url, onboarding_completed")
     .eq("id", user.id)
     .maybeSingle();
 
   const profile = profileResult.error ? null : profileResult.data;
+  const onboardingDone =
+    Boolean(profile?.onboarding_completed) ||
+    Boolean(user.user_metadata?.onboarding_completed);
+
+  if (!onboardingDone) {
+    redirect("/onboarding?step=interests");
+  }
 
   const displayName =
     profile?.display_name ||
@@ -27,62 +34,84 @@ export default async function DashboardPage() {
     user.email ||
     "Creator";
 
-  const providers: string[] = profile?.providers ?? [
-    user.app_metadata?.provider,
-  ].filter(Boolean);
+  const { data: prefs } = await supabase
+    .from("user_interest_preferences")
+    .select("weight, source, interest_tags(slug, label, domain)")
+    .eq("user_id", user.id)
+    .order("selected_at", { ascending: true });
+
+  const interests =
+    prefs
+      ?.map((row) => {
+        const tag = row.interest_tags as
+          | { slug: string; label: string; domain: string }
+          | { slug: string; label: string; domain: string }[]
+          | null;
+        if (!tag) return null;
+        const resolved = Array.isArray(tag) ? tag[0] : tag;
+        if (!resolved) return null;
+        return {
+          slug: resolved.slug,
+          label: resolved.label,
+          domain: resolved.domain,
+          weight: row.weight as number,
+        };
+      })
+      .filter(
+        (item): item is { slug: string; label: string; domain: string; weight: number } =>
+          Boolean(item),
+      ) ?? [];
 
   return (
-    <div className="relative flex min-h-dvh flex-col overflow-hidden">
+    <div className="relative flex min-h-dvh flex-col overflow-hidden bg-paper text-ink">
       <div
         aria-hidden
-        className="absolute inset-0"
-        style={{
-          backgroundImage: `
-            radial-gradient(ellipse 80% 60% at 70% 0%, rgba(155, 176, 182, 0.45) 0%, transparent 55%),
-            linear-gradient(165deg, #f2f6f7 0%, #dce7ea 50%, #c8d8dc 100%)
-          `,
-        }}
+        className="pointer-events-none absolute inset-y-0 right-0 hidden w-1/3 bg-klein md:block"
       />
 
-      <header className="relative z-10 flex items-center justify-between px-6 py-6 sm:px-12">
+      <header className="relative z-10 flex items-center justify-between px-8 py-7 sm:px-12">
         <Link
           href="/"
           className="font-[family-name:var(--font-display)] text-2xl font-bold tracking-[-0.03em] text-ink"
         >
-          Wisp
+          wisp.
         </Link>
         <form action="/auth/signout" method="post">
           <button
             type="submit"
-            className="rounded-md border border-ink/15 bg-white/50 px-4 py-2 text-sm font-medium text-ink backdrop-blur-sm transition-colors hover:bg-white/80"
+            className="rounded-md border border-ink/15 bg-white/70 px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-white"
           >
             Log out
           </button>
         </form>
       </header>
 
-      <main className="relative z-10 mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center px-6 pb-20">
-        <p className="text-sm font-medium uppercase tracking-[0.14em] text-klein">
-          Signed in
+      <main className="relative z-10 mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center px-8 pb-20 sm:px-12 lg:mx-0 lg:px-16">
+        <p className="text-sm font-medium tracking-[0.12em] text-klein lowercase">
+          signed in
         </p>
-        <h1 className="mt-3 font-[family-name:var(--font-display)] text-4xl font-semibold tracking-[-0.03em] text-ink sm:text-5xl">
-          Hello, {displayName}
+        <h1 className="mt-3 font-[family-name:var(--font-display)] text-4xl font-bold tracking-[-0.03em] text-ink sm:text-5xl">
+          hello, {displayName}
         </h1>
-        <p className="mt-4 max-w-lg text-base leading-relaxed text-ink/65">
-          Your account is stored in Supabase. Connected providers:{" "}
-          {providers.length > 0
-            ? providers
-                .map((p) =>
-                  p === "custom:pinterest" || p === "pinterest"
-                    ? "Pinterest"
-                    : p.charAt(0).toUpperCase() + p.slice(1),
-                )
-                .join(", ")
-            : "none yet"}
-          .
-        </p>
         {user.email ? (
           <p className="mt-2 text-sm text-ink/50">{user.email}</p>
+        ) : null}
+
+        {interests.length > 0 ? (
+          <div className="mt-10">
+            <p className="text-sm text-ink/50">your interests</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {interests.map((tag) => (
+                <span
+                  key={tag.slug}
+                  className="rounded-md border border-ink/10 bg-white/80 px-3 py-1.5 text-sm text-ink/80"
+                  title={`${tag.domain} · weight ${tag.weight}`}
+                >
+                  {tag.label}
+                </span>
+              ))}
+            </div>
+          </div>
         ) : null}
       </main>
     </div>

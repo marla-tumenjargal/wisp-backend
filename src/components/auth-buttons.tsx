@@ -12,7 +12,10 @@ type AuthButtonsProps = {
   nextPath?: string;
 };
 
-export function AuthButtons({ mode, nextPath = "/dashboard" }: AuthButtonsProps) {
+export function AuthButtons({
+  mode,
+  nextPath = "/onboarding?step=interests",
+}: AuthButtonsProps) {
   const [loading, setLoading] = useState<AuthProviderId | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,14 +27,26 @@ export function AuthButtons({ mode, nextPath = "/dashboard" }: AuthButtonsProps)
     const origin = window.location.origin;
     const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent(nextPath)}`;
 
+    const scopes =
+      provider === "spotify"
+        ? "user-read-email user-read-private"
+        : provider === "custom:arena"
+          ? "read"
+          : undefined;
+
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
-      provider,
+      provider: provider as any,
       options: {
         redirectTo,
-        scopes:
-          provider === "spotify"
-            ? "user-read-email user-read-private"
-            : "user_accounts:read",
+        ...(scopes ? { scopes } : {}),
+        ...(provider === "google"
+          ? {
+              queryParams: {
+                access_type: "offline",
+                prompt: "select_account",
+              },
+            }
+          : {}),
       },
     });
 
@@ -51,12 +66,20 @@ export function AuthButtons({ mode, nextPath = "/dashboard" }: AuthButtonsProps)
           onClick={() => signIn(provider.id)}
           className={[
             "inline-flex h-12 w-full items-center justify-center gap-3 rounded-md border px-5 text-[0.95rem] font-medium tracking-wide transition-[background-color,border-color,transform,opacity] duration-200 active:scale-[0.98] disabled:cursor-wait disabled:opacity-60",
-            provider.brand === "spotify"
-              ? "border-[#1DB954]/30 bg-[#1DB954] text-white hover:bg-[#1aa34a]"
-              : "border-[#E60023]/25 bg-[#E60023] text-white hover:bg-[#c4001d]",
+            provider.brand === "google"
+              ? "border-ink/15 bg-white text-ink hover:bg-white/80"
+              : provider.brand === "spotify"
+                ? "border-[#1DB954]/30 bg-[#1DB954] text-white hover:bg-[#1aa34a]"
+                : "border-ink/20 bg-ink text-paper hover:bg-ink/90",
           ].join(" ")}
         >
-          {provider.brand === "spotify" ? <SpotifyIcon /> : <PinterestIcon />}
+          {provider.brand === "google" ? (
+            <GoogleIcon />
+          ) : provider.brand === "spotify" ? (
+            <SpotifyIcon />
+          ) : (
+            <ArenaIcon />
+          )}
           {loading === provider.id
             ? "Redirecting…"
             : mode === "signup"
@@ -74,6 +97,29 @@ export function AuthButtons({ mode, nextPath = "/dashboard" }: AuthButtonsProps)
   );
 }
 
+function GoogleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden>
+      <path
+        fill="#FFC107"
+        d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"
+      />
+      <path
+        fill="#FF3D00"
+        d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"
+      />
+      <path
+        fill="#4CAF50"
+        d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"
+      />
+      <path
+        fill="#1976D2"
+        d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"
+      />
+    </svg>
+  );
+}
+
 function SpotifyIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden fill="currentColor">
@@ -82,10 +128,10 @@ function SpotifyIcon() {
   );
 }
 
-function PinterestIcon() {
+function ArenaIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden fill="currentColor">
-      <path d="M12 0C5.373 0 0 5.372 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.219-.937 1.407-5.968 1.407-5.968s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 01.083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.888-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.631-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12.001 24c6.624 0 11.999-5.373 11.999-12C24 5.372 18.626.001 12.001.001z" />
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden fill="currentColor">
+      <path d="M12 2L2 7.5V16.5L12 22L22 16.5V7.5L12 2ZM12 4.2L19.5 8.3V15.7L12 19.8L4.5 15.7V8.3L12 4.2ZM12 7L8 14H10.2L10.9 12.2H13.1L13.8 14H16L12 7ZM12 9.3L12.8 11H11.2L12 9.3Z" />
     </svg>
   );
 }

@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 
 function safeNextPath(next: string | null): string {
   if (!next || !next.startsWith("/") || next.startsWith("//")) {
-    return "/dashboard";
+    return "/onboarding?step=interests";
   }
   return next;
 }
@@ -16,7 +16,7 @@ export async function GET(request: Request) {
 
   if (errorDescription) {
     return NextResponse.redirect(
-      `${origin}/login?error=${encodeURIComponent(errorDescription)}`,
+      `${origin}/onboarding?error=${encodeURIComponent(errorDescription)}`,
     );
   }
 
@@ -25,20 +25,40 @@ export async function GET(request: Request) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      let destination = next;
+
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("onboarding_completed")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (!profile?.onboarding_completed) {
+          destination = "/onboarding?step=interests";
+        } else if (next.startsWith("/onboarding")) {
+          destination = "/dashboard";
+        }
+      }
+
       const forwardedHost = request.headers.get("x-forwarded-host");
       const isLocal = process.env.NODE_ENV === "development";
 
       if (!isLocal && forwardedHost) {
-        return NextResponse.redirect(`https://${forwardedHost}${next}`);
+        return NextResponse.redirect(`https://${forwardedHost}${destination}`);
       }
 
-      return NextResponse.redirect(`${origin}${next}`);
+      return NextResponse.redirect(`${origin}${destination}`);
     }
 
     return NextResponse.redirect(
-      `${origin}/login?error=${encodeURIComponent(error.message)}`,
+      `${origin}/onboarding?error=${encodeURIComponent(error.message)}`,
     );
   }
 
-  return NextResponse.redirect(`${origin}/login?error=missing_code`);
+  return NextResponse.redirect(`${origin}/onboarding?error=missing_code`);
 }

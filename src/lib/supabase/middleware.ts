@@ -1,5 +1,4 @@
 import { createServerClient } from "@supabase/ssr";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function updateSession(request: NextRequest) {
@@ -36,34 +35,59 @@ export async function updateSession(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
   const isAuthPage = path === "/login" || path === "/signup";
+  const isOnboarding = path.startsWith("/onboarding");
   const isProtected = path.startsWith("/dashboard");
 
   if (!user && isProtected) {
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
+    url.pathname = "/onboarding";
     url.searchParams.set("next", path);
     return NextResponse.redirect(url);
   }
 
-  if (user && isAuthPage) {
+  async function onboardingCompleted(): Promise<boolean | null> {
+    if (!user) return null;
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("onboarding_completed")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    // Schema not applied yet — treat as incomplete, don't crash
+    if (error) {
+      const metaCompleted = Boolean(user.user_metadata?.onboarding_completed);
+      return metaCompleted;
+    }
+    return Boolean(data?.onboarding_completed);
+  }
+
+  if (user && (isAuthPage || path === "/")) {
+    const completed = await onboardingCompleted();
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    url.pathname = completed ? "/dashboard" : "/onboarding";
+    url.search = completed ? "" : "step=interests";
+    return NextResponse.redirect(url);
+  }
+
+  if (user && isProtected) {
+    const completed = await onboardingCompleted();
+    if (!completed) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/onboarding";
+      url.search = "step=interests";
+      return NextResponse.redirect(url);
+    }
+  }
+
+  if (
+    !user &&
+    isOnboarding &&
+    request.nextUrl.searchParams.get("step") === "interests"
+  ) {
+    const url = request.nextUrl.clone();
+    url.search = "";
     return NextResponse.redirect(url);
   }
 
   return supabaseResponse;
-}
-
-/** Service-role client for admin tasks (never expose to the browser). */
-export function createAdminClient() {
-  return createSupabaseClient(
-    process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SECRET_KEY!,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    },
-  );
 }

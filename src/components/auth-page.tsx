@@ -37,8 +37,8 @@ export function AuthPage({ mode, nextPath, error }: AuthPageProps) {
         </h1>
         <p className="animate-rise-delay-1 mt-3 text-base leading-relaxed text-ink/65">
           {isSignup
-            ? "Connect Spotify or Pinterest to start weaving ideas across mediums."
-            : "Log in with the same Spotify or Pinterest account you used to sign up."}
+            ? "Connect Spotify or Are.na to start weaving ideas across mediums."
+            : "Log in with the same Spotify or Are.na account you used to sign up."}
         </p>
 
         {error ? (
