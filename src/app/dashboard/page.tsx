@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ArenaSuggestions } from "@/components/arena-suggestions";
 import { VaultSection } from "@/components/vault-section";
 import { createClient } from "@/lib/supabase/server";
 
@@ -135,6 +136,10 @@ export default async function DashboardPage() {
 
         <section>
           <VaultSection initialSync={vaultSync} />
+        </section>
+
+        <section>
+          <ArenaSuggestions />
         </section>
       </main>
     </div>
