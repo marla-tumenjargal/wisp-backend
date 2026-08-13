@@ -137,6 +137,7 @@ export async function ingestVaultZip(
   userId: string,
   zipBuffer: Buffer,
   originalName?: string,
+  graphId?: string,
 ): Promise<VaultUploadSummary> {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), `wisp-vault-${userId.slice(0, 8)}-`));
   const extractDir = path.join(tempRoot, "extract");
@@ -170,6 +171,7 @@ export async function ingestVaultZip(
       return {
         id,
         user_id: userId,
+        graph_id: graphId ?? null,
         title: note.title,
         filename: note.filename,
         path: note.path,
@@ -179,6 +181,7 @@ export async function ingestVaultZip(
         wikilinks: note.wikilinks,
         synced_at: syncedAt,
         updated_at: syncedAt,
+        source: "obsidian",
       };
     });
 
@@ -201,6 +204,7 @@ export async function ingestVaultZip(
     const backlinkEdges: {
       id: string;
       user_id: string;
+      graph_id: string | null;
       source_node_id: string;
       target_node_id: string;
       edge_type: "backlink";
@@ -219,6 +223,7 @@ export async function ingestVaultZip(
         backlinkEdges.push({
           id: randomUUID(),
           user_id: userId,
+          graph_id: graphId ?? null,
           source_node_id: node.id,
           target_node_id: targetId,
           edge_type: "backlink",
@@ -231,32 +236,62 @@ export async function ingestVaultZip(
     const sharedTagEdges = buildSharedTagEdges(
       userId,
       nodes.map((n) => ({ id: n.id, tags: n.tags })),
-    ).map((edge) => ({ id: randomUUID(), ...edge }));
+    ).map((edge) => ({
+      id: randomUUID(),
+      graph_id: graphId ?? null,
+      ...edge,
+    }));
 
     const admin = createAdminClient();
 
-    // Replace previous vault for this user
-    await admin.from("vault_edges").delete().eq("user_id", userId);
-    await admin.from("vault_nodes").delete().eq("user_id", userId);
+    // Replace previous vault for this graph (or legacy user-wide if no graphId)
+    if (graphId) {
+      // Keep board-accepted nodes; replace Obsidian notes only (edges cascade)
+      await admin
+        .from("vault_nodes")
+        .delete()
+        .eq("graph_id", graphId)
+        .eq("source", "obsidian");
+    } else {
+      await admin.from("vault_edges").delete().eq("user_id", userId);
+      await admin.from("vault_nodes").delete().eq("user_id", userId);
+    }
 
     await chunkedInsert("vault_nodes", nodes);
     await chunkedInsert("vault_edges", [...backlinkEdges, ...sharedTagEdges]);
 
     const edgeCount = backlinkEdges.length + sharedTagEdges.length;
-    const { error: syncError } = await admin.from("vault_syncs").upsert(
-      {
-        user_id: userId,
-        node_count: nodes.length,
-        edge_count: edgeCount,
-        vault_name: vaultName,
-        synced_at: syncedAt,
-        updated_at: syncedAt,
-      },
-      { onConflict: "user_id" },
-    );
 
-    if (syncError) {
-      throw new Error(`Failed saving vault sync summary: ${syncError.message}`);
+    if (graphId) {
+      const { error: graphError } = await admin
+        .from("graphs")
+        .update({
+          vault_name: vaultName,
+          vault_node_count: nodes.length,
+          vault_edge_count: edgeCount,
+          vault_synced_at: syncedAt,
+          updated_at: syncedAt,
+        })
+        .eq("id", graphId)
+        .eq("user_id", userId);
+      if (graphError) {
+        throw new Error(`Failed saving graph vault summary: ${graphError.message}`);
+      }
+    } else {
+      const { error: syncError } = await admin.from("vault_syncs").upsert(
+        {
+          user_id: userId,
+          node_count: nodes.length,
+          edge_count: edgeCount,
+          vault_name: vaultName,
+          synced_at: syncedAt,
+          updated_at: syncedAt,
+        },
+        { onConflict: "user_id" },
+      );
+      if (syncError) {
+        throw new Error(`Failed saving vault sync summary: ${syncError.message}`);
+      }
     }
 
     return {

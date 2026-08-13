@@ -25,8 +25,26 @@ export async function POST(request: Request) {
   }
 
   const file = form.get("file");
+  const graphIdRaw = form.get("graphId");
+  const graphId =
+    typeof graphIdRaw === "string" && graphIdRaw.length > 0
+      ? graphIdRaw
+      : undefined;
+
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "Expected a zip file field named file" }, { status: 400 });
+  }
+
+  if (graphId) {
+    const { data: owned } = await supabase
+      .from("graphs")
+      .select("id")
+      .eq("id", graphId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!owned) {
+      return NextResponse.json({ error: "Graph not found" }, { status: 404 });
+    }
   }
 
   if (!file.name.toLowerCase().endsWith(".zip") && file.type !== "application/zip") {
@@ -39,7 +57,7 @@ export async function POST(request: Request) {
 
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
-    const summary = await ingestVaultZip(user.id, buffer, file.name);
+    const summary = await ingestVaultZip(user.id, buffer, file.name, graphId);
     return NextResponse.json(summary);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Vault ingest failed";

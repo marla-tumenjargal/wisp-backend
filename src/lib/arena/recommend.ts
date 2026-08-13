@@ -148,20 +148,34 @@ function toSuggestion(
 
 /**
  * Recommend up to `limit` Are.na content pieces from public channels
- * related to the user's onboarding interests.
+ * related to interests and optional focus-derived channels.
  */
 export async function recommendArenaContent(
   interestSlugs: string[],
   limit = 10,
+  extraChannels: string[] = [],
 ): Promise<ArenaSuggestion[]> {
   const channels = channelsForInterests(interestSlugs);
+
+  // Prepend focus channels so they win first slots
+  const seen = new Set(channels.map((c) => c.slug));
+  const prioritized = [
+    ...extraChannels
+      .filter((slug) => {
+        if (seen.has(slug)) return false;
+        seen.add(slug);
+        return true;
+      })
+      .map((slug) => ({ slug, matchedInterest: "focus" })),
+    ...channels,
+  ];
+
   const suggestions: ArenaSuggestion[] = [];
   const seenIds = new Set<number>();
 
-  for (const channel of channels) {
+  for (const channel of prioritized) {
     if (suggestions.length >= limit) break;
     const blocks = await fetchChannelContents(channel.slug);
-    // Prefer Image type first, then anything with a preview image
     const ordered = [
       ...blocks.filter((b) => b.type === "Image"),
       ...blocks.filter((b) => b.type !== "Image"),
@@ -176,11 +190,9 @@ export async function recommendArenaContent(
       suggestions.push(item);
     }
 
-    // Soft throttle for guest rate limits
     await sleep(120);
   }
 
-  // Top up from fallbacks if needed
   if (suggestions.length < limit) {
     for (const slug of FALLBACK_CHANNELS) {
       if (suggestions.length >= limit) break;

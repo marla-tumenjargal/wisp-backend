@@ -12,16 +12,18 @@ export type VaultSyncState = {
 } | null;
 
 type VaultSectionProps = {
+  graphId?: string;
   initialSync: VaultSyncState;
 };
 
-export function VaultSection({ initialSync }: VaultSectionProps) {
+export function VaultSection({ graphId, initialSync }: VaultSectionProps) {
   const [sync, setSync] = useState<VaultSyncState>(initialSync);
   const [resyncing, setResyncing] = useState(false);
 
   if (!sync || resyncing) {
     return (
       <VaultConnect
+        graphId={graphId}
         mode={sync ? "resync" : "connect"}
         onCancel={sync ? () => setResyncing(false) : undefined}
         onSuccess={(summary) => {

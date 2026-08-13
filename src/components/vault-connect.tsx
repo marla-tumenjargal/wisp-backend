@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 
 type VaultConnectProps = {
+  graphId?: string;
   onSuccess: (summary: {
     node_count: number;
     edge_count: number;
@@ -16,6 +17,7 @@ type VaultConnectProps = {
 type UploadPhase = "idle" | "uploading" | "processing" | "error";
 
 export function VaultConnect({
+  graphId,
   onSuccess,
   onCancel,
   mode = "connect",
@@ -33,7 +35,7 @@ export function VaultConnect({
     setProgress(0);
 
     try {
-      const summary = await uploadWithProgress(file, (pct) => {
+      const summary = await uploadWithProgress(file, graphId, (pct) => {
         setProgress(pct);
         if (pct >= 100) setPhase("processing");
       });
@@ -141,6 +143,7 @@ export function VaultConnect({
 
 function uploadWithProgress(
   file: File,
+  graphId: string | undefined,
   onProgress: (pct: number) => void,
 ): Promise<{
   node_count: number;
@@ -177,6 +180,7 @@ function uploadWithProgress(
 
     const form = new FormData();
     form.append("file", file);
+    if (graphId) form.append("graphId", graphId);
     xhr.send(form);
   });
 }
