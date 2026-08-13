@@ -78,5 +78,9 @@ Until that runs, the app still saves selected interests to `user_interest_prefer
 
 ## Obsidian vault (dashboard)
 
-Manual `.zip` upload — no OAuth. Run `supabase/migrations/005_vault.sql`, then use **Second Brain** on `/dashboard` to upload a vault export. Notes → `vault_nodes`; wikilinks + shared tags → `vault_edges`.
+Manual `.zip` upload — no OAuth. Run `supabase/migrations/005_vault.sql`, then use **vault** in the dashboard nav.
+
+## Are.na feed → knowledge graph
+
+`/dashboard` is nav + full-screen Are.na suggestions (~12). **OK** saves a piece into `vault_nodes` / `vault_edges` (shared interests), same graph as Obsidian. Also run `006_arena_graph.sql`.
 

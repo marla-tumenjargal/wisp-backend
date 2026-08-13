@@ -37,7 +37,7 @@ export async function GET() {
   }
 
   try {
-    const suggestions = await recommendArenaContent(interestSlugs, 10);
+    const suggestions = await recommendArenaContent(interestSlugs, 12);
     return NextResponse.json({
       suggestions,
       based_on: interestSlugs,
