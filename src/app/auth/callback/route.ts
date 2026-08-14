@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 
 function safeNextPath(next: string | null): string {
   if (!next || !next.startsWith("/") || next.startsWith("//")) {
-    return "/onboarding?step=interests";
+    return "/onboarding";
   }
   return next;
 }
@@ -16,7 +16,7 @@ export async function GET(request: Request) {
 
   if (errorDescription) {
     return NextResponse.redirect(
-      `${origin}/onboarding?error=${encodeURIComponent(errorDescription)}`,
+      `${origin}/login?error=${encodeURIComponent(errorDescription)}`,
     );
   }
 
@@ -38,8 +38,12 @@ export async function GET(request: Request) {
           .eq("id", user.id)
           .maybeSingle();
 
-        if (!profile?.onboarding_completed) {
-          destination = "/onboarding?step=interests";
+        const completed =
+          Boolean(profile?.onboarding_completed) ||
+          Boolean(user.user_metadata?.onboarding_completed);
+
+        if (!completed) {
+          destination = "/onboarding";
         } else if (next.startsWith("/onboarding")) {
           destination = "/dashboard";
         }
@@ -56,9 +60,9 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.redirect(
-      `${origin}/onboarding?error=${encodeURIComponent(error.message)}`,
+      `${origin}/login?error=${encodeURIComponent(error.message)}`,
     );
   }
 
-  return NextResponse.redirect(`${origin}/onboarding?error=missing_code`);
+  return NextResponse.redirect(`${origin}/login?error=missing_code`);
 }

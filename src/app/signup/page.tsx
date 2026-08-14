@@ -9,7 +9,7 @@ export default async function SignupPage({
   return (
     <AuthPage
       mode="signup"
-      nextPath={params.next ?? "/dashboard"}
+      nextPath={params.next ?? "/onboarding"}
       error={params.error}
     />
   );

@@ -14,7 +14,7 @@ type AuthButtonsProps = {
 
 export function AuthButtons({
   mode,
-  nextPath = "/onboarding?step=interests",
+  nextPath = "/onboarding",
 }: AuthButtonsProps) {
   const [loading, setLoading] = useState<AuthProviderId | null>(null);
   const [error, setError] = useState<string | null>(null);

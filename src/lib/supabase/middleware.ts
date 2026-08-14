@@ -40,8 +40,15 @@ export async function updateSession(request: NextRequest) {
 
   if (!user && isProtected) {
     const url = request.nextUrl.clone();
-    url.pathname = "/onboarding";
+    url.pathname = "/login";
     url.searchParams.set("next", path);
+    return NextResponse.redirect(url);
+  }
+
+  if (!user && isOnboarding) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.searchParams.set("next", "/onboarding");
     return NextResponse.redirect(url);
   }
 
@@ -53,10 +60,8 @@ export async function updateSession(request: NextRequest) {
       .eq("id", user.id)
       .maybeSingle();
 
-    // Schema not applied yet — treat as incomplete, don't crash
     if (error) {
-      const metaCompleted = Boolean(user.user_metadata?.onboarding_completed);
-      return metaCompleted;
+      return Boolean(user.user_metadata?.onboarding_completed);
     }
     return Boolean(data?.onboarding_completed);
   }
@@ -65,7 +70,7 @@ export async function updateSession(request: NextRequest) {
     const completed = await onboardingCompleted();
     const url = request.nextUrl.clone();
     url.pathname = completed ? "/dashboard" : "/onboarding";
-    url.search = completed ? "" : "step=interests";
+    url.search = "";
     return NextResponse.redirect(url);
   }
 
@@ -74,19 +79,9 @@ export async function updateSession(request: NextRequest) {
     if (!completed) {
       const url = request.nextUrl.clone();
       url.pathname = "/onboarding";
-      url.search = "step=interests";
+      url.search = "";
       return NextResponse.redirect(url);
     }
-  }
-
-  if (
-    !user &&
-    isOnboarding &&
-    request.nextUrl.searchParams.get("step") === "interests"
-  ) {
-    const url = request.nextUrl.clone();
-    url.search = "";
-    return NextResponse.redirect(url);
   }
 
   return supabaseResponse;

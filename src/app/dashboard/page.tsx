@@ -11,7 +11,7 @@ export default async function DashboardPage() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/onboarding");
+    redirect("/login?next=/dashboard");
   }
 
   const profileResult = await supabase
@@ -26,7 +26,7 @@ export default async function DashboardPage() {
     Boolean(user.user_metadata?.onboarding_completed);
 
   if (!onboardingDone) {
-    redirect("/onboarding?step=interests");
+    redirect("/onboarding");
   }
 
   let graphs: Awaited<ReturnType<typeof listGraphs>> = [];

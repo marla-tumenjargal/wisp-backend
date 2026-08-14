@@ -11,6 +11,7 @@ export type GraphRecord = {
   theme: string | null;
   goal: string | null;
   similarities: string | null;
+  focus_areas?: string[] | null;
   reference_image_url: string | null;
   aesthetic_brief: AestheticBrief | null;
   vault_name: string | null;

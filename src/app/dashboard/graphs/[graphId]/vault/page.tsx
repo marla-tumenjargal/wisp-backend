@@ -14,7 +14,7 @@ export default async function GraphVaultPage({ params }: Props) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) redirect("/onboarding");
+  if (!user) redirect("/login?next=/dashboard");
 
   const graph = await getGraph(supabase, user.id, graphId);
   if (!graph) redirect("/dashboard");

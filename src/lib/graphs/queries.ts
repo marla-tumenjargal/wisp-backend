@@ -46,6 +46,7 @@ export async function createGraph(
     theme?: string | null;
     goal?: string | null;
     similarities?: string | null;
+    focus_areas?: string[] | null;
     reference_image_url?: string | null;
     aesthetic_brief?: AestheticBrief | null;
   },
@@ -71,6 +72,7 @@ export async function createGraph(
       similarities,
       reference_image_url: input.reference_image_url ?? null,
       aesthetic_brief: input.aesthetic_brief ?? null,
+      ...(input.focus_areas ? { focus_areas: input.focus_areas } : {}),
     })
     .select(GRAPH_SELECT)
     .single();

@@ -41,7 +41,16 @@ export const INTEREST_TAGS = INTEREST_CATALOG.map((t) => t.label);
 export type InterestTag = (typeof INTEREST_CATALOG)[number]["label"];
 export type InterestSlug = (typeof INTEREST_CATALOG)[number]["slug"];
 
-export const ONBOARDING_STEPS = ["account", "interests"] as const;
+export const ONBOARDING_STEPS = [
+  "welcome",
+  "about",
+  "interests",
+  "aesthetic",
+  "mediums",
+  "project",
+  "connect",
+  "finish",
+] as const;
 export type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
 
 export function labelToSlug(label: string): string | undefined {
