@@ -46,7 +46,7 @@ export function KnowledgeGraph({ nodes, edges }: KnowledgeGraphProps) {
     if (!el) return;
     const ro = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect;
-      setSize({ w: Math.max(320, width), h: Math.max(420, height) });
+      setSize({ w: Math.max(320, width), h: Math.max(560, height) });
     });
     ro.observe(el);
     return () => ro.disconnect();
@@ -103,10 +103,10 @@ export function KnowledgeGraph({ nodes, edges }: KnowledgeGraphProps) {
             const b = next[j];
             let dx = a.x - b.x;
             let dy = a.y - b.y;
-            let dist = Math.hypot(dx, dy) || 0.01;
-            const minDist = 90;
+            const dist = Math.hypot(dx, dy) || 0.01;
+            const minDist = 130;
             if (dist < minDist * 2.2) {
-              const force = ((minDist * minDist) / (dist * dist)) * 0.35;
+              const force = ((minDist * minDist) / (dist * dist)) * 0.4;
               dx = (dx / dist) * force;
               dy = (dy / dist) * force;
               a.vx += dx;
@@ -125,7 +125,7 @@ export function KnowledgeGraph({ nodes, edges }: KnowledgeGraphProps) {
           const dx = b.x - a.x;
           const dy = b.y - a.y;
           const dist = Math.hypot(dx, dy) || 0.01;
-          const ideal = 140 / Math.max(link.weight, 0.5);
+          const ideal = 180 / Math.max(link.weight, 0.5);
           const force = (dist - ideal) * 0.015;
           const fx = (dx / dist) * force;
           const fy = (dy / dist) * force;
@@ -136,7 +136,7 @@ export function KnowledgeGraph({ nodes, edges }: KnowledgeGraphProps) {
         }
 
         // Center gravity + damping + bounds
-        const pad = 48;
+        const pad = 64;
         for (const n of next) {
           n.vx += (cx - n.x) * 0.004;
           n.vy += (cy - n.y) * 0.004;
@@ -177,7 +177,10 @@ export function KnowledgeGraph({ nodes, edges }: KnowledgeGraphProps) {
   }
 
   return (
-    <div ref={wrapRef} className="dot-grid relative min-h-0 flex-1 overflow-hidden">
+    <div
+      ref={wrapRef}
+      className="dot-grid relative min-h-[70dvh] flex-1 overflow-hidden sm:min-h-[75dvh]"
+    >
       <svg
         className="absolute inset-0 h-full w-full"
         width={size.w}
@@ -220,11 +223,11 @@ export function KnowledgeGraph({ nodes, edges }: KnowledgeGraphProps) {
           >
             <div
               className={[
-                "overflow-hidden rounded-full border bg-white shadow-sm",
+                "overflow-hidden rounded-full border bg-white shadow-md",
                 isArena ? "border-klein/40" : "border-ink/15",
-                hovered ? "ring-2 ring-klein/30" : "",
+                hovered ? "ring-2 ring-klein/35" : "",
               ].join(" ")}
-              style={{ width: 56, height: 56 }}
+              style={{ width: 88, height: 88 }}
             >
               {node.image_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -234,14 +237,14 @@ export function KnowledgeGraph({ nodes, edges }: KnowledgeGraphProps) {
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center bg-paper text-[0.55rem] uppercase tracking-wide text-ink/40">
+                <div className="flex h-full w-full items-center justify-center bg-paper text-[0.7rem] uppercase tracking-wide text-ink/40">
                   {isArena ? "a" : "n"}
                 </div>
               )}
             </div>
             {hovered ? (
-              <div className="absolute left-1/2 top-[calc(100%+8px)] w-40 -translate-x-1/2 rounded-md border border-ink/10 bg-white/95 px-2 py-1.5 text-center shadow-sm">
-                <p className="line-clamp-2 text-[0.7rem] font-medium leading-snug text-ink">
+              <div className="absolute left-1/2 top-[calc(100%+10px)] w-48 -translate-x-1/2 rounded-md border border-ink/10 bg-white/95 px-3 py-2 text-center shadow-sm">
+                <p className="line-clamp-2 text-[0.8rem] font-medium leading-snug text-ink">
                   {node.title}
                 </p>
               </div>

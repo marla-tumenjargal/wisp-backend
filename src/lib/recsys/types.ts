@@ -79,7 +79,24 @@ export type RecommendationExplanation = {
   projectBridges: string[];
   sharedConcepts: string[];
   mediumShift: { from: string; to: string } | null;
+  /** Full prose for cards / legacy summary */
   summary: string;
+  /** Recommended because … */
+  reason: string;
+  /** Intentional bridge between reference and designer/project */
+  connection: string;
+  /** You could take inspiration from … */
+  designTakeaway: string;
+  /** True when rewritten by the Wisp LLM system prompt */
+  llm?: boolean;
+  scores100?: {
+    novelty: number;
+    relevance: number;
+    projectFit: number;
+    creativeValue: number;
+  };
+  medium?: string;
+  category?: string;
 };
 
 export type RankedRecommendation = {

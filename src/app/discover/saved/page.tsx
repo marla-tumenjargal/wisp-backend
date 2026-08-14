@@ -25,7 +25,11 @@ export default async function SavedPage() {
 
   const items = (data ?? [])
     .map((row) => {
-      const item = row.recommendation_items as Record<string, unknown> | null;
+      const raw = row.recommendation_items as unknown;
+      const item = (Array.isArray(raw) ? raw[0] : raw) as Record<
+        string,
+        unknown
+      > | null;
       if (!item) return null;
       const candidate: RecommendationCandidate = {
         slug: String(item.slug),

@@ -10,7 +10,7 @@ type SavedLibraryProps = {
 
 export function SavedLibrary({ items }: SavedLibraryProps) {
   return (
-    <div className="mt-10 columns-1 gap-5 sm:columns-2 xl:columns-3">
+    <div className="mt-10 grid grid-cols-1 gap-7 sm:gap-8 md:grid-cols-2 2xl:grid-cols-3">
       {items.map(({ candidate }) => (
         <SavedCard key={candidate.slug} candidate={candidate} />
       ))}
@@ -24,8 +24,8 @@ function SavedCard({ candidate }: { candidate: RecommendationCandidate }) {
   const showImage = Boolean(candidate.imageUrl) && !imgFailed;
 
   return (
-    <article className="mb-5 break-inside-avoid overflow-hidden rounded-md border border-ink/10 bg-white/70">
-      <div className="aspect-[4/3] overflow-hidden">
+    <article className="overflow-hidden rounded-lg border border-ink/10 bg-white/80">
+      <div className="aspect-[5/4] overflow-hidden">
         {showImage ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -36,30 +36,30 @@ function SavedCard({ candidate }: { candidate: RecommendationCandidate }) {
           />
         ) : (
           <div
-            className="flex h-full items-center justify-center font-[family-name:var(--font-display)] text-4xl"
+            className="flex h-full items-center justify-center font-[family-name:var(--font-display)] text-5xl"
             style={visual.style}
           >
             {visual.mark}
           </div>
         )}
       </div>
-      <div className="px-4 py-4">
-        <p className="text-[0.65rem] uppercase tracking-[0.12em] text-ink/40">
+      <div className="px-5 py-5 sm:px-6 sm:py-6">
+        <p className="text-[0.7rem] uppercase tracking-[0.14em] text-ink/40">
           {candidate.medium}
         </p>
-        <h2 className="mt-1 font-[family-name:var(--font-display)] text-lg font-semibold tracking-[-0.02em]">
+        <h2 className="mt-2 font-[family-name:var(--font-display)] text-xl font-semibold tracking-[-0.02em]">
           {candidate.title}
         </h2>
-        <p className="mt-2 line-clamp-3 text-sm text-ink/55">
+        <p className="mt-3 line-clamp-3 text-base leading-relaxed text-ink/55">
           {candidate.description}
         </p>
         <a
           href={candidate.sourceUrl}
           target="_blank"
           rel="noreferrer"
-          className="mt-3 inline-block text-sm text-klein hover:underline"
+          className="mt-4 inline-block text-sm text-klein hover:underline"
         >
-          Open source
+          Open source →
         </a>
       </div>
     </article>

@@ -32,7 +32,7 @@ export function DiscoverFeedView({ initial }: DiscoverFeedViewProps) {
   const [hidden, setHidden] = useState(() => new Set<string>());
   const [busySlug, setBusySlug] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [visible, setVisible] = useState(8);
+  const [visible, setVisible] = useState(6);
   const [isPending, startTransition] = useTransition();
 
   const projectId = feed.project?.id ?? null;
@@ -51,14 +51,17 @@ export function DiscoverFeedView({ initial }: DiscoverFeedViewProps) {
 
   const forProject = useMemo(
     () => applyFilter(feed.sections.for_project),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [feed, filter, query, hidden],
   );
   const forYou = useMemo(
     () => applyFilter(feed.sections.for_you),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [feed, filter, query, hidden],
   );
   const unexpected = useMemo(
     () => applyFilter(feed.sections.unexpected),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [feed, filter, query, hidden],
   );
 
@@ -123,8 +126,9 @@ export function DiscoverFeedView({ initial }: DiscoverFeedViewProps) {
     });
   }
 
-  const cardProps = (item: RankedRecommendation) => ({
+  const cardProps = (item: RankedRecommendation, featured = false) => ({
     item,
+    featured,
     saved: item.itemId ? saved.has(item.itemId) : false,
     inProject: item.itemId ? inProject.has(item.itemId) : false,
     projectName: feed.project?.name ?? null,
@@ -139,29 +143,31 @@ export function DiscoverFeedView({ initial }: DiscoverFeedViewProps) {
   });
 
   return (
-    <div>
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-[0.7rem] font-medium uppercase tracking-[0.14em] text-ink/40">
+    <div className="w-full">
+      <div className="flex flex-col gap-8 xl:flex-row xl:items-end xl:justify-between">
+        <div className="max-w-3xl">
+          <p className="text-[0.72rem] font-medium uppercase tracking-[0.16em] text-ink/40">
             Discover
           </p>
-          <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl font-bold tracking-[-0.03em] sm:text-5xl">
-            For your project
+          <h1 className="mt-3 font-[family-name:var(--font-display)] text-4xl font-bold tracking-[-0.035em] sm:text-5xl lg:text-[3.25rem]">
+            {feed.project ? "For your project" : "Your creative world"}
           </h1>
           {feed.project ? (
-            <p className="mt-2 text-lg text-ink/60">{feed.project.name}</p>
+            <p className="mt-3 text-xl leading-snug text-ink/60 sm:text-2xl">
+              {feed.project.name}
+            </p>
           ) : (
-            <p className="mt-3 max-w-md text-base text-ink/55">
+            <p className="mt-4 max-w-xl text-lg leading-relaxed text-ink/55">
               Start a project to make your recommendations more specific.
             </p>
           )}
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {feed.projects.length > 1 ? (
-            <label className="text-sm text-ink/50">
+            <label className="flex items-center gap-2 text-sm text-ink/50">
               Project
               <select
-                className="ml-2 rounded-md border border-ink/15 bg-white/70 px-2 py-1.5 text-ink"
+                className="rounded-md border border-ink/15 bg-white/80 px-3 py-2 text-ink outline-none focus:border-klein/40"
                 value={feed.project?.id ?? ""}
                 onChange={(e) => switchProject(e.target.value)}
               >
@@ -178,7 +184,7 @@ export function DiscoverFeedView({ initial }: DiscoverFeedViewProps) {
             placeholder="Search references…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="h-10 w-full max-w-xs rounded-md border border-ink/12 bg-white/70 px-3 text-sm outline-none focus:border-klein/40 sm:w-56"
+            className="h-11 w-full max-w-sm rounded-md border border-ink/12 bg-white/80 px-4 text-sm outline-none focus:border-klein/40 sm:w-64"
           />
         </div>
       </div>
@@ -186,13 +192,17 @@ export function DiscoverFeedView({ initial }: DiscoverFeedViewProps) {
       {!feed.project ? (
         <Link
           href="/dashboard"
-          className="mt-5 inline-flex h-10 items-center rounded-md bg-klein px-4 text-sm font-medium text-white hover:bg-klein-deep"
+          className="mt-6 inline-flex h-11 items-center rounded-md bg-klein px-5 text-sm font-medium text-white hover:bg-klein-deep"
         >
           Create project →
         </Link>
       ) : null}
 
-      <div className="mt-8 flex flex-wrap gap-2" role="tablist" aria-label="Filter by medium">
+      <div
+        className="mt-10 flex flex-wrap gap-2"
+        role="tablist"
+        aria-label="Filter by medium"
+      >
         {DISCOVER_FILTERS.map((f) => (
           <button
             key={f}
@@ -201,7 +211,7 @@ export function DiscoverFeedView({ initial }: DiscoverFeedViewProps) {
             aria-selected={filter === f}
             onClick={() => setFilter(f)}
             className={[
-              "rounded-md px-3 py-1.5 text-sm tracking-wide transition-colors",
+              "rounded-md px-3.5 py-2 text-sm tracking-wide transition-colors",
               filter === f
                 ? "bg-ink text-paper"
                 : "border border-ink/12 text-ink/55 hover:text-ink",
@@ -213,48 +223,51 @@ export function DiscoverFeedView({ initial }: DiscoverFeedViewProps) {
       </div>
 
       {error ? (
-        <p className="mt-4 text-sm text-red-700" role="alert">
+        <p className="mt-5 text-sm text-red-700" role="alert">
           {error}
         </p>
       ) : null}
 
       {feed.project && forProject.length > 0 ? (
-        <section className="mt-12">
-          <SectionHead
-            title="For your project"
-            subtitle={feed.project.name}
-          />
+        <section className="mt-14">
+          <SectionHead title="For your project" subtitle={feed.project.name} />
           <CardGrid>
-            {forProject.map((item) => (
-              <RecommendationCard key={item.candidate.slug} {...cardProps(item)} />
+            {forProject.map((item, index) => (
+              <RecommendationCard
+                key={item.candidate.slug}
+                {...cardProps(item, index === 0)}
+              />
             ))}
           </CardGrid>
         </section>
       ) : null}
 
-      <section className="mt-14">
+      <section className="mt-16">
         <SectionHead title="For you" subtitle="From your creative profile" />
         {forYou.length === 0 ? (
           <EmptyCopy text="Wisp is gathering references for you..." />
         ) : (
           <CardGrid>
             {forYou.slice(0, visible).map((item) => (
-              <RecommendationCard key={item.candidate.slug} {...cardProps(item)} />
+              <RecommendationCard
+                key={item.candidate.slug}
+                {...cardProps(item)}
+              />
             ))}
           </CardGrid>
         )}
         {forYou.length > visible ? (
           <button
             type="button"
-            onClick={() => setVisible((n) => n + 8)}
-            className="mt-8 text-sm text-ink/50 hover:text-ink"
+            onClick={() => setVisible((n) => n + 6)}
+            className="mt-10 inline-flex h-11 items-center rounded-md border border-ink/12 px-5 text-sm text-ink/60 transition-colors hover:border-ink/25 hover:text-ink"
           >
-            Load more
+            Load more references
           </button>
         ) : null}
       </section>
 
-      <section className="mt-16 pb-16">
+      <section className="mt-20 pb-8">
         <SectionHead
           title="Unexpected connections"
           subtitle="Outside your usual medium — still defensible"
@@ -264,7 +277,10 @@ export function DiscoverFeedView({ initial }: DiscoverFeedViewProps) {
         ) : (
           <CardGrid>
             {unexpected.map((item) => (
-              <RecommendationCard key={item.candidate.slug} {...cardProps(item)} />
+              <RecommendationCard
+                key={item.candidate.slug}
+                {...cardProps(item)}
+              />
             ))}
           </CardGrid>
         )}
@@ -275,21 +291,24 @@ export function DiscoverFeedView({ initial }: DiscoverFeedViewProps) {
 
 function SectionHead({ title, subtitle }: { title: string; subtitle: string }) {
   return (
-    <div className="mb-6">
-      <h2 className="font-[family-name:var(--font-display)] text-2xl font-semibold tracking-[-0.02em]">
+    <div className="mb-8 border-b border-ink/8 pb-4">
+      <h2 className="font-[family-name:var(--font-display)] text-3xl font-semibold tracking-[-0.025em] sm:text-[2rem]">
         {title}
       </h2>
-      <p className="mt-1 text-sm text-ink/45">{subtitle}</p>
+      <p className="mt-1.5 text-base text-ink/45">{subtitle}</p>
     </div>
   );
 }
 
+/** Wide, neat grid — fewer larger cards instead of cramped masonry. */
 function CardGrid({ children }: { children: React.ReactNode }) {
   return (
-    <div className="columns-1 gap-5 sm:columns-2 xl:columns-3">{children}</div>
+    <div className="grid grid-cols-1 gap-7 sm:gap-8 md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3">
+      {children}
+    </div>
   );
 }
 
 function EmptyCopy({ text }: { text: string }) {
-  return <p className="text-base text-ink/50">{text}</p>;
+  return <p className="text-lg text-ink/50">{text}</p>;
 }

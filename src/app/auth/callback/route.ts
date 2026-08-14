@@ -45,7 +45,7 @@ export async function GET(request: Request) {
         if (!completed) {
           destination = "/onboarding";
         } else if (next.startsWith("/onboarding")) {
-          destination = "/dashboard";
+          destination = "/discover";
         }
       }
 

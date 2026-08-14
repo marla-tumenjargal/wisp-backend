@@ -1,4 +1,27 @@
 -- Discover recommendation catalog, ranked feeds, interactions, saves
+-- Safe to re-run: repairs an earlier recommendation_items.id (text) mismatch.
+
+drop table if exists public.user_recommendation_feed cascade;
+drop table if exists public.user_interactions cascade;
+drop table if exists public.user_saved_items cascade;
+drop table if exists public.project_references cascade;
+
+-- If catalog was created with text id, rebuild it as uuid
+do $$
+begin
+  if to_regclass('public.recommendation_items') is not null then
+    if exists (
+      select 1
+      from information_schema.columns
+      where table_schema = 'public'
+        and table_name = 'recommendation_items'
+        and column_name = 'id'
+        and udt_name <> 'uuid'
+    ) then
+      drop table public.recommendation_items cascade;
+    end if;
+  end if;
+end $$;
 
 create table if not exists public.recommendation_items (
   id uuid primary key default gen_random_uuid(),
@@ -87,7 +110,6 @@ create table if not exists public.project_references (
 create index if not exists project_references_user_idx
   on public.project_references (user_id, created_at desc);
 
--- Learned tag weights from interactions (feedback loop)
 create table if not exists public.user_tag_weights (
   user_id uuid not null references auth.users (id) on delete cascade,
   tag text not null,
@@ -109,6 +131,19 @@ create policy "Recommendation catalog is readable"
   on public.recommendation_items for select
   to authenticated
   using (true);
+
+drop policy if exists "Authenticated upsert catalog" on public.recommendation_items;
+create policy "Authenticated upsert catalog"
+  on public.recommendation_items for insert
+  to authenticated
+  with check (true);
+
+drop policy if exists "Authenticated update catalog" on public.recommendation_items;
+create policy "Authenticated update catalog"
+  on public.recommendation_items for update
+  to authenticated
+  using (true)
+  with check (true);
 
 drop policy if exists "Users read own feed" on public.user_recommendation_feed;
 create policy "Users read own feed"

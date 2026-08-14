@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { RecommendationCandidate } from "@/lib/recsys/types";
 import { SEED_CATALOG } from "@/lib/recsys/sources/seed-catalog";
 
@@ -31,7 +32,16 @@ export async function upsertCatalog(
     updated_at: new Date().toISOString(),
   }));
 
-  const { data, error } = await supabase
+  let writer = supabase;
+  if (process.env.SUPABASE_SECRET_KEY) {
+    try {
+      writer = createAdminClient();
+    } catch {
+      writer = supabase;
+    }
+  }
+
+  const { data, error } = await writer
     .from("recommendation_items")
     .upsert(rows, { onConflict: "slug" })
     .select("id, slug");

@@ -231,7 +231,7 @@ export function OnboardingWizard({
         setError(result.error);
         return;
       }
-      router.push("/dashboard");
+      router.push("/discover");
       router.refresh();
     });
   }

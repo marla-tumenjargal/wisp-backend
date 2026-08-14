@@ -191,25 +191,44 @@ export function explainRecommendation(
       ? { from: primaryMedium, to: item.medium }
       : null;
 
-  const bits: string[] = [];
-  if (matchedPreferences.length) {
-    bits.push(`you like ${matchedPreferences.join(", ")}`);
-  }
+  const conceptPhrase =
+    sharedConcepts[0]?.replace(/-/g, " ") ||
+    projectBridges[0]?.replace(/-/g, " ") ||
+    item.concepts[0]?.replace(/-/g, " ") ||
+    item.tags[0] ||
+    "composition and hierarchy";
+
+  const reasonParts: string[] = [];
   if (project) {
-    bits.push(`your current project is ${project.name}`);
+    reasonParts.push(`you're working on ${project.name}`);
+  }
+  if (matchedPreferences.length) {
+    reasonParts.push(
+      `you care about ${matchedPreferences.slice(0, 3).join(", ")}`,
+    );
   }
   if (mediumShift) {
-    bits.push(
-      `this ${item.medium.toLowerCase()} reference shares ${
-        sharedConcepts[0]?.replace(/-/g, " ") ?? "a visual structure"
-      } with what you're making`,
+    reasonParts.push(
+      `this ${item.medium.toLowerCase()} reference opens a cross-medium leap from ${mediumShift.from}`,
     );
   }
 
-  const summary =
-    bits.length > 0
-      ? `Recommended because ${bits.join(" — ")}.`
-      : `A ${item.medium.toLowerCase()} reference that expands how ${item.category.toLowerCase()} can look.`;
+  const reason =
+    reasonParts.length > 0
+      ? `Recommended because ${reasonParts.join(" and ")}.`
+      : `Recommended because it expands how ${item.category.toLowerCase()} can feel beyond familiar templates.`;
+
+  const connection = project
+    ? `${item.title} connects to ${project.name} through ${conceptPhrase} — a pattern that can transfer across mediums.`
+    : `${item.title} bridges ${matchedPreferences.slice(0, 2).join(" / ") || "your taste"} with ${item.medium.toLowerCase()} thinking around ${conceptPhrase}.`;
+
+  const designCue =
+    item.tags[0] ||
+    item.aesthetics[0]?.toLowerCase() ||
+    item.category.toLowerCase();
+  const designTakeaway = `You could take inspiration from its ${designCue} treatment — specifically how ${conceptPhrase} organizes attention.`;
+
+  const summary = `${reason} ${designTakeaway}`;
 
   return {
     matchedPreferences,
@@ -218,6 +237,19 @@ export function explainRecommendation(
     sharedConcepts,
     mediumShift,
     summary,
+    reason,
+    connection,
+    designTakeaway,
+    scores100: {
+      novelty: Math.round(scores.novelty * 100),
+      relevance: Math.round(scores.preference * 100),
+      projectFit: Math.round(scores.project * 100),
+      creativeValue: Math.round(
+        ((scores.novelty + scores.preference + scores.project) / 3) * 100,
+      ),
+    },
+    medium: item.medium,
+    category: item.category,
   };
 }
 

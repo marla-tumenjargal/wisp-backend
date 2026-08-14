@@ -1,14 +1,14 @@
 /**
- * Ranking weights — keep here so they can be tuned or swapped
- * for a learned ranker without touching feature code.
+ * Ranking weights — Creative Value > Pure Similarity.
+ * Keep here so they can be tuned or swapped for a learned ranker.
  *
  * Score = Σ w_i * f_i
  */
 export const RANK_WEIGHTS = {
-  userPreference: 0.35,
-  projectRelevance: 0.3,
-  semanticSimilarity: 0.2,
-  novelty: 0.1,
+  userPreference: 0.28,
+  projectRelevance: 0.32,
+  semanticSimilarity: 0.15,
+  novelty: 0.2,
   popularity: 0.05,
 } as const;
 

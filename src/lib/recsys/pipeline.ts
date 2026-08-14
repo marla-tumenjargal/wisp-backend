@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { displayGraphName, type GraphRecord } from "@/lib/graphs/types";
+import { llmRankRecommendations } from "@/lib/recsys/llm-rank";
 import { buildProjectProfile, buildUserProfile } from "@/lib/recsys/profile";
 import { rankFeed } from "@/lib/recsys/rank";
 import { collectCandidates } from "@/lib/recsys/sources";
@@ -77,7 +78,21 @@ export async function generateDiscoverFeed(
     () => new Map<string, string>(),
   );
 
-  const ranked = rankFeed(candidates, user, project, dismissed);
+  let ranked = rankFeed(candidates, user, project, dismissed);
+
+  const shortlist = [
+    ...ranked.for_project,
+    ...ranked.for_you,
+    ...ranked.unexpected,
+  ];
+  const savedTitles = await loadSavedTitles(supabase, saved);
+  const llmRanked = await llmRankRecommendations({
+    user,
+    project,
+    shortlist,
+    savedTitles,
+  });
+  if (llmRanked) ranked = llmRanked;
 
   const attachIds = (items: RankedRecommendation[]) =>
     items.map((item) => ({
@@ -183,6 +198,67 @@ async function loadSaved(
   return (data ?? []).map((r) => r.item_id as string);
 }
 
+async function loadSavedTitles(
+  supabase: SupabaseClient,
+  savedIds: string[],
+): Promise<string[]> {
+  if (savedIds.length === 0) return [];
+  const { data } = await supabase
+    .from("recommendation_items")
+    .select("title")
+    .in("id", savedIds.slice(0, 12));
+  return (data ?? [])
+    .map((r) => r.title as string)
+    .filter(Boolean);
+}
+
+function normalizeExplanation(raw: unknown): RankedRecommendation["explanation"] {
+  const obj =
+    raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+  const summary = typeof obj.summary === "string" ? obj.summary : "";
+  const reason =
+    typeof obj.reason === "string" && obj.reason
+      ? obj.reason
+      : summary || "Recommended as a creative connection.";
+  const connection =
+    typeof obj.connection === "string" ? obj.connection : "";
+  const designTakeaway =
+    typeof obj.designTakeaway === "string"
+      ? obj.designTakeaway
+      : typeof obj.design_takeaway === "string"
+        ? obj.design_takeaway
+        : "";
+
+  return {
+    matchedPreferences: Array.isArray(obj.matchedPreferences)
+      ? (obj.matchedPreferences as string[])
+      : [],
+    projectName:
+      typeof obj.projectName === "string" ? obj.projectName : null,
+    projectBridges: Array.isArray(obj.projectBridges)
+      ? (obj.projectBridges as string[])
+      : [],
+    sharedConcepts: Array.isArray(obj.sharedConcepts)
+      ? (obj.sharedConcepts as string[])
+      : [],
+    mediumShift:
+      obj.mediumShift && typeof obj.mediumShift === "object"
+        ? (obj.mediumShift as { from: string; to: string })
+        : null,
+    summary: summary || `${reason} ${designTakeaway}`.trim(),
+    reason,
+    connection,
+    designTakeaway,
+    llm: Boolean(obj.llm),
+    scores100:
+      obj.scores100 && typeof obj.scores100 === "object"
+        ? (obj.scores100 as RankedRecommendation["explanation"]["scores100"])
+        : undefined,
+    medium: typeof obj.medium === "string" ? obj.medium : undefined,
+    category: typeof obj.category === "string" ? obj.category : undefined,
+  };
+}
+
 async function loadProjectRefs(
   supabase: SupabaseClient,
   userId: string,
@@ -223,7 +299,11 @@ async function loadCachedFeed(
   };
 
   for (const row of data) {
-    const item = row.recommendation_items as Record<string, unknown> | null;
+    const raw = row.recommendation_items as unknown;
+    const item = (Array.isArray(raw) ? raw[0] : raw) as Record<
+      string,
+      unknown
+    > | null;
     if (!item) continue;
     const section = row.section as FeedSection;
     if (!(section in sections)) continue;
@@ -239,14 +319,7 @@ async function loadCachedFeed(
         popularity: Number(row.popularity_score),
         total: Number(row.score),
       },
-      explanation: (row.explanation ?? {
-        matchedPreferences: [],
-        projectName: null,
-        projectBridges: [],
-        sharedConcepts: [],
-        mediumShift: null,
-        summary: "",
-      }) as RankedRecommendation["explanation"],
+      explanation: normalizeExplanation(row.explanation),
       candidate: {
         slug: String(item.slug),
         title: String(item.title),

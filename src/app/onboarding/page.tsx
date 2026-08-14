@@ -82,7 +82,7 @@ export default async function OnboardingPage({
     Boolean(user.user_metadata?.onboarding_completed);
 
   if (onboardingDone) {
-    redirect("/dashboard");
+    redirect("/discover");
   }
 
   const meta = user.user_metadata ?? {};

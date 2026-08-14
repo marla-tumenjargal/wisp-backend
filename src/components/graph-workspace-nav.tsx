@@ -25,7 +25,7 @@ export function GraphWorkspaceNav({
     <header className="relative z-30 flex shrink-0 items-center justify-between border-b border-ink/10 bg-paper px-6 py-4 sm:px-10">
       <div className="flex min-w-0 items-center gap-4">
         <Link
-          href="/dashboard"
+          href="/discover"
           className="font-[family-name:var(--font-display)] text-xl font-bold tracking-[-0.03em] text-ink"
         >
           wisp.
